@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>VoiceTranslate | Traductor de Voz en Tiempo Real</title>
+  <meta name="description" content="Traductor de voz en tiempo real con Web Speech API y Gemini Flash. Transcripción instantánea, síntesis de voz e historial.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#091329">
+
+  <!-- iOS / Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VoiceTranslate">
+  <link rel="apple-touch-icon" href="assets/logo.png">
+
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="css/styles.css?v=kyvora6">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Encabezado de la aplicación -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <img src="assets/logo.png" alt="Kyvora Logo" class="brand-logo-img">
+        </div>
+        <div>
+          <h1 class="brand-title">VoiceTranslate</h1>
+          <p class="brand-subtitle">Traducción de voz en tiempo real</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Indicador de proveedor activo -->
+        <button id="provider-badge" class="badge-provider" title="Clic para ver configuración de la API" aria-label="Estado del proveedor de traducción">
+          <span class="badge-dot"></span>
+          <span id="provider-badge-text">Gemini Flash</span>
+        </button>
+
+        <!-- Indicador de red -->
+        <div id="network-status" class="status-indicator online" title="Conexión a internet activa" aria-label="Conexión de red activa">
+          <span class="network-icon" aria-hidden="true">●</span>
+          <span class="network-label">En línea</span>
+        </div>
+
+        <!-- Botón de ajustes -->
+        <button id="btn-settings" class="btn-icon" title="Configurar API Key" aria-label="Abrir configuración de API">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+
+        <!-- Botón de cambio de tema -->
+        <button id="btn-theme" class="btn-icon" title="Cambiar tema claro/oscuro" aria-label="Cambiar modo de color">
+          <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+          <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor principal -->
+  <main class="main-content">
+    <div class="content-wrapper">
+
+      <!-- Alerta de navegador no compatible (oculta por defecto) -->
+      <section id="banner-browser-support" class="alert-banner warning" hidden>
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <strong>Navegador no compatible:</strong>
+          <span>Tu navegador no incluye soporte para la Web Speech API. Te recomendamos usar principalmente <strong>Google Chrome</strong> o <strong>Microsoft Edge</strong>. En navegadores como <strong>Brave</strong> (que bloquea la API de voz de Google por defecto) o <strong>Firefox</strong> la función puede no estar disponible.</span>
+        </div>
+      </section>
+
+      <!-- Barra de selección de idiomas -->
+      <section class="language-bar-card" aria-label="Selección de idiomas">
+        <div class="lang-select-group">
+          <label for="select-source-lang" class="lang-label">
+            <span class="label-dot source"></span> Hablo en:
+          </label>
+          <div class="select-wrapper">
+            <select id="select-source-lang" class="lang-select" aria-label="Idioma de entrada">
+              <option value="es" data-speech="es-CO" selected>🇪🇸 Español</option>
+              <option value="en" data-speech="en-US">🇺🇸 Inglés (English)</option>
+              <option value="fr" data-speech="fr-FR">🇫🇷 Francés (Français)</option>
+              <option value="pt" data-speech="pt-BR">🇧🇷 Portugués (Português)</option>
+              <option value="de" data-speech="de-DE">🇩🇪 Alemán (Deutsch)</option>
+              <option value="it" data-speech="it-IT">🇮🇹 Italiano</option>
+              <option value="ja" data-speech="ja-JP">🇯🇵 Japonés (日本語)</option>
+              <option value="zh" data-speech="zh-CN">🇨🇳 Chino (中文)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Botón para intercambiar idiomas -->
+        <button id="btn-swap-langs" class="btn-swap" title="Intercambiar idiomas" aria-label="Intercambiar idiomas de entrada y salida">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m16 3 4 4-4 4"></path>
+            <path d="M20 7H4"></path>
+            <path d="m8 21-4-4 4-4"></path>
+            <path d="M4 17h16"></path>
+          </svg>
+        </button>
+
+        <div class="lang-select-group">
+          <label for="select-target-lang" class="lang-label">
+            <span class="label-dot target"></span> Traducir a:
+          </label>
+          <div class="select-wrapper">
+            <select id="select-target-lang" class="lang-select" aria-label="Idioma de salida">
+              <option value="es" data-speech="es-CO">🇪🇸 Español</option>
+              <option value="en" data-speech="en-US" selected>🇺🇸 Inglés (English)</option>
+              <option value="fr" data-speech="fr-FR">🇫🇷 Francés (Français)</option>
+              <option value="pt" data-speech="pt-BR">🇧🇷 Portugués (Português)</option>
+              <option value="de" data-speech="de-DE">🇩🇪 Alemán (Deutsch)</option>
+              <option value="it" data-speech="it-IT">🇮🇹 Italiano</option>
+              <option value="ja" data-speech="ja-JP">🇯🇵 Japonés (日本語)</option>
+              <option value="zh" data-speech="zh-CN">🇨🇳 Chino (中文)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Modo Conversación en Vivo -->
+      <section class="conversation-card" aria-label="Modo conversación en vivo">
+        <div class="conversation-card-header">
+          <div class="conversation-toggle-group">
+            <label class="switch" for="toggle-conversation-mode" title="Activar/desactivar modo conversación">
+              <input type="checkbox" id="toggle-conversation-mode" aria-describedby="desc-conv-mode">
+              <span class="slider"></span>
+            </label>
+            <div class="conversation-texts">
+              <div class="conversation-title-row">
+                <span class="conversation-title">
+                  <svg class="conv-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  Modo conversación en vivo
+                </span>
+                <span id="badge-conv-status" class="badge-status-pill off">OFF</span>
+              </div>
+              <p id="desc-conv-mode" class="conversation-desc">Traduce y reproduce en voz alta automáticamente apenas termines de hablar</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banner de recomendación de audífonos (visible solo con el modo activo) -->
+        <div id="banner-headphones" class="headphones-advice" hidden>
+          <div class="advice-icon">🎧</div>
+          <div class="advice-text">
+            <strong>Recomendación:</strong> Usa audífonos en este modo para evitar que el micrófono capte la voz sintetizada y se genere un bucle.
+          </div>
+        </div>
+
+        <!-- Aviso fuerte de audífonos solo en móvil -->
+        <div id="banner-headphones-mobile" class="headphones-advice mobile-emphasis" hidden>
+          <div class="advice-icon">🎧</div>
+          <div class="advice-text">
+            <strong>📱 En móvil: usa audífonos o auriculares.</strong>
+            Los altavoces del celular pueden generar un bucle de retroalimentación en modo conversación en vivo.
+          </div>
+        </div>
+      </section>
+
+      <!-- Zona de control del Micrófono -->
+      <section class="mic-section" aria-label="Control de micrófono">
+        <div class="mic-container">
+          <div class="mic-pulse-ring ring-1" aria-hidden="true"></div>
+          <div class="mic-pulse-ring ring-2" aria-hidden="true"></div>
+          <div class="mic-pulse-ring ring-3" aria-hidden="true"></div>
+          
+          <button id="btn-mic" class="btn-mic" aria-label="Iniciar traducción de voz" title="Iniciar escucha">
+            <!-- Icono Micrófono Activo/Inactivo -->
+            <svg class="mic-icon default" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+              <line x1="8" y1="22" x2="16" y2="22"></line>
+            </svg>
+            <!-- Icono Micrófono Grabando (onda de parada) -->
+            <svg class="mic-icon recording" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+            </svg>
+          </button>
+        </div>
+
+        <div class="mic-status-wrapper">
+          <p id="mic-status-text" class="mic-status-text">Presiona el micrófono para comenzar</p>
+          <!-- Onda de sonido visual cuando está activo -->
+          <div id="sound-wave" class="sound-wave" aria-hidden="true" hidden>
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel de visualización: Transcripción y Traducción -->
+      <section class="translation-board" aria-label="Resultados en tiempo real">
+        
+        <!-- Tarjeta 1: Transcripción en vivo -->
+        <article class="board-card transcription-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </span>
+              <h2>Voz detectada</h2>
+              <span id="badge-source-code" class="tag-badge">ES</span>
+            </div>
+            <div class="card-actions">
+              <button id="btn-copy-transcription" class="btn-card-action" title="Copiar transcripción" aria-label="Copiar texto transcrito">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+                <span>Copiar</span>
+              </button>
+              <button id="btn-clear-current" class="btn-card-action" title="Limpiar texto actual" aria-label="Limpiar pantallas actuales">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18"></path>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                </svg>
+                <span>Limpiar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div id="transcription-output" class="text-display transcription-text" aria-live="polite">
+              <span class="placeholder-text">Empieza a hablar para ver la transcripción en vivo...</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Tarjeta 2: Traducción en tiempo real -->
+        <article class="board-card translation-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="card-icon highlight" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="m5 8 6 6"></path>
+                  <path d="m4 14 6-6 2-3"></path>
+                  <path d="M2 5h12"></path>
+                  <path d="M7 2h1"></path>
+                  <path d="m22 22-5-10-5 10"></path>
+                  <path d="M14 18h6"></path>
+                </svg>
+              </span>
+              <h2>Traducción</h2>
+              <span id="badge-target-code" class="tag-badge highlight">EN</span>
+              <span id="translation-loader" class="translation-spinner" aria-hidden="true" hidden></span>
+            </div>
+            <div class="card-actions">
+              <button id="btn-speak-translation" class="btn-card-action primary" title="Escuchar traducción en voz alta" aria-label="Escuchar traducción">
+                <svg class="icon-speak" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+                <span>Escuchar</span>
+              </button>
+              <button id="btn-copy-translation" class="btn-card-action" title="Copiar traducción" aria-label="Copiar texto traducido">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+                <span>Copiar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div id="translation-output" class="text-display translation-text" aria-live="assertive">
+              <span class="placeholder-text">La traducción aparecerá aquí automáticamente...</span>
+            </div>
+            <!-- Aviso de modo demo (visible solo cuando el proveedor es MyMemory) -->
+            <div id="banner-demo-mode" class="demo-mode-banner" hidden>
+              <span class="demo-mode-icon">⚡</span>
+              <span class="demo-mode-text">
+                <strong>Modo demo:</strong> la traducción es literal y puede fallar con jerga.
+                Para mejor calidad agrega tu API key de Gemini (gratis).
+              </span>
+              <button id="btn-demo-open-settings" class="demo-mode-btn">Configurar clave</button>
+            </div>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- Sección de Historial de la Sesión -->
+      <section class="history-section" aria-label="Historial de traducciones">
+        <div class="history-header">
+          <div class="history-title-group">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <h2>Historial de la sesión</h2>
+            <span id="history-count" class="badge-count">0</span>
+          </div>
+          <div class="history-actions">
+            <button id="btn-copy-all-history" class="btn-subtle" title="Copiar todo el historial" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+              </svg>
+              <span>Copiar todo</span>
+            </button>
+            <button id="btn-clear-history" class="btn-subtle danger" title="Borrar todo el historial" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+              </svg>
+              <span>Borrar historial</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="history-list" class="history-list">
+          <!-- Elementos de historial dinámicos se insertan aquí -->
+          <div class="history-empty">
+            <p>Aún no hay frases traducidas en esta sesión.</p>
+            <span class="history-hint">Habla en el micrófono para comenzar a registrar traducciones.</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal de Configuración (HTML5 Dialog nativo) -->
+  <dialog id="modal-settings" class="settings-dialog" aria-labelledby="modal-settings-title">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <h3 id="modal-settings-title">Configuración de Traducción</h3>
+        <button id="btn-close-settings" class="btn-icon close-btn" aria-label="Cerrar ventana de configuración">✕</button>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-description">
+          VoiceTranslate utiliza por defecto la API de <strong>Gemini Flash</strong> para una traducción precisa e instantánea, o <strong>MyMemory</strong> como demo gratuita sin clave.
+        </p>
+
+        <div class="form-group">
+          <label for="input-gemini-key">API Key de Gemini (Google AI Studio):</label>
+          <div class="input-password-wrapper">
+            <input type="password" id="input-gemini-key" class="form-input" placeholder="AIzaSy..." autocomplete="off">
+            <button type="button" id="btn-toggle-key-visibility" class="btn-eye" title="Mostrar/Ocultar clave">👁️</button>
+          </div>
+          <small class="form-help">
+            ¿No tienes una clave? Consíguela gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> o deja el campo vacío para usar el modo demo.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="select-gemini-model">Modelo de Gemini:</label>
+          <select id="select-gemini-model" class="form-input">
+            <option value="gemini-2.5-flash" selected>gemini-2.5-flash (Recomendado, ultra rápido)</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="select-provider-override">Proveedor activo:</label>
+          <select id="select-provider-override" class="form-input">
+            <option value="gemini">Gemini Flash (con API Key)</option>
+            <option value="mymemory">MyMemory Translation (Modo Demo Gratuito)</option>
+          </select>
+        </div>
+
+        <div id="test-connection-result" class="test-result" hidden></div>
+      </div>
+
+      <div class="dialog-footer">
+        <button id="btn-test-connection" class="btn-secondary">Probar conexión</button>
+        <button id="btn-save-settings" class="btn-primary">Guardar cambios</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Modal de Permisos de Micrófono Denegados -->
+  <dialog id="modal-mic-error" class="settings-dialog error-dialog" aria-labelledby="modal-mic-error-title">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <h3 id="modal-mic-error-title">Acceso al micrófono denegado</h3>
+        <button id="btn-close-mic-error" class="btn-icon close-btn" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="dialog-body">
+        <p>El navegador no tiene permiso para escuchar el micrófono. Para habilitarlo:</p>
+        <ol class="help-steps">
+          <li><strong>Chrome / Edge (escritorio):</strong> Haz clic en el candado junto a la URL → <strong>Micrófono → Permitir</strong>.</li>
+          <li><strong>iPhone / iPad (Safari):</strong> Ve a <strong>Ajustes → Safari → Micrófono → Permitir para este sitio</strong>.</li>
+          <li><strong>Android (Chrome):</strong> Pulsa el candado en la barra de direcciones → <strong>Permisos → Micrófono → Permitir</strong>.</li>
+          <li>Recarga la página o pulsa nuevamente el botón de micrófono.</li>
+        </ol>
+      </div>
+      <div class="dialog-footer">
+        <button id="btn-retry-mic" class="btn-primary">Entendido y reintentar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Contenedor flotante de notificaciones Toasts -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Script principal de la aplicación en ES6 Modules -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

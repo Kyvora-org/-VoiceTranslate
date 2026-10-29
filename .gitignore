@@ -1,0 +1,7 @@
+# Archivo de configuración local con claves de API
+js/config.js
+
+# Entornos y dependencias de node (si se usa un servidor local como live-server)
+node_modules/
+.DS_Store
+Thumbs.db

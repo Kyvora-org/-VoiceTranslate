@@ -1,0 +1,25 @@
+{
+  "name": "VoiceTranslate | Kyvora Studio",
+  "short_name": "VoiceTranslate",
+  "description": "Traductor de voz en tiempo real con Web Speech API y Gemini Flash",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070c18",
+  "theme_color": "#091329",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
